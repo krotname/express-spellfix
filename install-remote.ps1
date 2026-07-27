@@ -6,12 +6,15 @@
 # и применяет патч. Всё происходит в профиле пользователя: ни установка eXpress,
 # ни системные каталоги не требуют повышения прав.
 
-[CmdletBinding()]
-param(
-    [string]$Repository = 'krotname/express-spellfix',
-    [string]$Version = 'latest',
-    [switch]$Restart
-)
+# Скрипт запускается через `irm ... | iex`, поэтому параметров у него нет:
+# настройки читаются из переменных окружения.
+#   SPELLFIX_RESTART=1        — перезапустить eXpress сразу после установки
+#   SPELLFIX_VERSION=v1.0.0   — поставить конкретную версию вместо последней
+#   SPELLFIX_REPO=owner/name  — другой репозиторий (для форков)
+
+$Repository = if ($env:SPELLFIX_REPO) { $env:SPELLFIX_REPO } else { 'krotname/express-spellfix' }
+$Version = if ($env:SPELLFIX_VERSION) { $env:SPELLFIX_VERSION } else { 'latest' }
+$Restart = $env:SPELLFIX_RESTART -in @('1', 'true', 'yes')
 
 $ErrorActionPreference = 'Stop'
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
