@@ -6,13 +6,22 @@
 
 ## Установка
 
-Одна команда, права администратора не нужны:
+Одна команда, права администратора не нужны. Ничего клонировать и распаковывать вручную не надо.
+
+**PowerShell:**
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://github.com/krotname/express-spellfix/releases/latest/download/install-remote.ps1 | iex"
 ```
 
-Затем перезапустите eXpress.
+**Командная строка (curl, есть в Windows 10/11 из коробки):**
+
+```bat
+curl -sL -o "%TEMP%\spellfix.ps1" https://github.com/krotname/express-spellfix/releases/latest/download/install-remote.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File "%TEMP%\spellfix.ps1"
+```
+
+Затем перезапустите eXpress — или добавьте `$env:SPELLFIX_RESTART=1;` перед командой PowerShell,
+чтобы установщик перезапустил мессенджер сам.
 
 ## Удаление
 
