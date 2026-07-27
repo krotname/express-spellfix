@@ -1,0 +1,7 @@
+bin/
+*.log
+*.log.1
+config.json
+state.json
+guard-lastrun.txt
+dist/
