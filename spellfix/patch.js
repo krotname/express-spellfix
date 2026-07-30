@@ -168,6 +168,60 @@ function webContentsOf(win) {
   return win.webContents || win
 }
 
+// eXpress использует старый Slate поверх contenteditable. После нативного
+// replaceMisspelling Slate перерисовывает DOM, и Chromium иногда теряет
+// оставшиеся красные подчёркивания до следующего ручного ввода. Кратко
+// переключаем spellcheck у того же редактора после закрытия контекстного меню,
+// чтобы Chromium повторно проверил весь его текст.
+function refreshSpellcheck(target, props) {
+  if (!target) return
+
+  const x = Number.isFinite(props && props.x) ? Math.round(props.x) : 0
+  const y = Number.isFinite(props && props.y) ? Math.round(props.y) : 0
+  const script = `(() => {
+    const isEditable = element => Boolean(element && (
+      element.isContentEditable ||
+      element.tagName === 'INPUT' ||
+      element.tagName === 'TEXTAREA'
+    ))
+    const atPoint = document.elementFromPoint(${x}, ${y})
+    const pointEditor = atPoint && atPoint.closest
+      ? atPoint.closest('[contenteditable="true"], input, textarea')
+      : null
+    const editor = isEditable(pointEditor) ? pointEditor : document.activeElement
+    if (!isEditable(editor) || editor.spellcheck === false) return false
+
+    const previous = editor.getAttribute('spellcheck')
+    editor.setAttribute('spellcheck', 'false')
+    requestAnimationFrame(() => {
+      if (!editor.isConnected) return
+      if (previous === null) editor.removeAttribute('spellcheck')
+      else editor.setAttribute('spellcheck', previous)
+      try {
+        editor.focus({ preventScroll: true })
+      } catch (_) {
+        editor.focus()
+      }
+    })
+    return true
+  })()`
+
+  // click вызывается, пока нативное меню ещё закрывается. Следующая итерация
+  // event loop гарантирует, что фокус можно безопасно вернуть редактору.
+  setTimeout(() => {
+    try {
+      if (typeof target.focus === 'function') target.focus()
+      if (typeof target.executeJavaScript === 'function') {
+        Promise.resolve(target.executeJavaScript(script)).catch(error => {
+          log('spellcheck refresh failed: ' + error.message)
+        })
+      }
+    } catch (error) {
+      log('spellcheck refresh failed: ' + error.message)
+    }
+  }, 0)
+}
+
 function buildSpellItems(props, win) {
   if (!props || !props.misspelledWord || !props.isEditable) return []
 
@@ -181,6 +235,7 @@ function buildSpellItems(props, win) {
     click: () => {
       try {
         target.replaceMisspelling(suggestion)
+        refreshSpellcheck(target, props)
       } catch (error) {
         log('replaceMisspelling failed: ' + error.message)
       }
