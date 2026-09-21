@@ -39,6 +39,20 @@ function Write-GuardLog {
     if (-not $Quiet) { Write-Host $Message }
 }
 
+function Get-Sha256 {
+    param([string]$Path)
+    # Вместо Get-FileHash: если родительский процесс — PowerShell 7, его каталог
+    # модулей попадает в PSModulePath, Windows PowerShell 5.1 подхватывает оттуда
+    # Core-сборку Microsoft.PowerShell.Utility, и часть командлетов (в том числе
+    # Get-FileHash) в сессии просто отсутствует. .NET доступен всегда.
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [System.IO.File]::OpenRead($Path)
+        try { return [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-', '') }
+        finally { $stream.Dispose() }
+    } finally { $sha.Dispose() }
+}
+
 function Get-ExpressInstallPath {
     $candidates = @()
     $registryPaths = @(
@@ -135,10 +149,10 @@ if (-not (Test-Path -LiteralPath $appDir)) {
     New-Item -ItemType Directory -Path $appDir -Force | Out-Null
 }
 $loaderTarget = Join-Path $appDir 'index.js'
-$sourceHash = (Get-FileHash -LiteralPath $loaderSource -Algorithm SHA256).Hash
+$sourceHash = Get-Sha256 -Path $loaderSource
 $targetHash = $null
 if (Test-Path -LiteralPath $loaderTarget) {
-    $targetHash = (Get-FileHash -LiteralPath $loaderTarget -Algorithm SHA256).Hash
+    $targetHash = Get-Sha256 -Path $loaderTarget
 }
 if ($sourceHash -ne $targetHash) {
     Copy-Item -LiteralPath $loaderSource -Destination $loaderTarget -Force
