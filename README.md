@@ -20,8 +20,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://github.com/k
 curl -sL -o "%TEMP%\spellfix.ps1" https://github.com/krotname/express-spellfix/releases/latest/download/install-remote.ps1 && powershell -NoProfile -ExecutionPolicy Bypass -File "%TEMP%\spellfix.ps1"
 ```
 
-Затем перезапустите eXpress — или добавьте `$env:SPELLFIX_RESTART=1;` перед командой PowerShell,
-чтобы установщик перезапустил мессенджер сам.
+Любая из команд доводит дело до конца сама: скачивает релиз, ставит патч и перезапускает eXpress,
+поэтому подсказки работают сразу. Если перезапускать мессенджер не нужно, задайте
+`SPELLFIX_RESTART=0` — в PowerShell `$env:SPELLFIX_RESTART=0;` перед командой,
+в командной строке `set SPELLFIX_RESTART=0 &&` перед `curl`.
 
 ## Удаление
 
