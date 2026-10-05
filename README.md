@@ -1,5 +1,12 @@
 # eXpress SpellFix
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![PowerShell](https://img.shields.io/badge/PowerShell-technology-555.svg)](https://github.com/krotname/express-spellfix/search?l=PowerShell)
+[![C#](https://img.shields.io/badge/C%23-technology-555.svg)](https://github.com/krotname/express-spellfix/search?l=C%23)
+[![JavaScript](https://img.shields.io/badge/JavaScript-technology-555.svg)](https://github.com/krotname/express-spellfix/search?l=JavaScript)
+
+[English](README.en.md)
+
 Возвращает в контекстное меню мессенджера [eXpress](https://express.ms) подсказки по орфографии:
 правый клик по подчёркнутому слову → варианты замены и «Добавить в словарь».
 Слова берутся из системного словаря Windows — того же движка Microsoft, что и в Word.
