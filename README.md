@@ -46,6 +46,9 @@ powershell -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\Programs\eXpress-Spe
 Обновление eXpress стирает патч (мессенджер продолжает работать штатно), задача планировщика
 «eXpress SpellFix Guard» возвращает его в течение 10 минут.
 
+Фоновое задание запускается через `wscript.exe` без появления окон PowerShell
+или Windows Terminal. Переустановка также сохраняет этот способ запуска.
+
 Настройки — `config.json` рядом с установкой: языки, число подсказок, синхронизация со словарём Word.
 
 ## Требования

@@ -4,7 +4,7 @@
 
 [CmdletBinding()]
 param(
-    [int]$GuardIntervalMinutes = 10
+    [ValidateRange(1, 1440)][int]$GuardIntervalMinutes = 10
 )
 
 $ErrorActionPreference = 'Stop'
@@ -79,7 +79,7 @@ if (-not (Test-Path -LiteralPath $configPath)) {
 
 # Windows PowerShell 5.1 (именно он запускает задачу) читает файлы без BOM
 # как ANSI и ломается на кириллице — держим скрипты в UTF-8 с BOM.
-foreach ($script in @('guard.ps1', 'install.ps1', 'uninstall.ps1')) {
+foreach ($script in @('guard.ps1', 'install.ps1', 'uninstall.ps1', 'register-guard.ps1')) {
     $scriptPath = Join-Path $root $script
     if (-not (Test-Path -LiteralPath $scriptPath)) { continue }
     $bytes = [System.IO.File]::ReadAllBytes($scriptPath)
@@ -92,73 +92,7 @@ foreach ($script in @('guard.ps1', 'install.ps1', 'uninstall.ps1')) {
 }
 
 # --------------------------------------------------------- 5. задача-сторож
-Write-Step "Регистрация задачи «$taskName» (проверка каждые $GuardIntervalMinutes мин)"
-# Путь указывается полностью: короткое имя powershell.exe в PATH может указывать
-# на шим PowerShell 7, а задача должна работать независимо от него.
-$command = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$arguments = "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$root\guard.ps1`" -Quiet"
-$user = "$env:USERDOMAIN\$env:USERNAME"
-$startBoundary = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
-
-$xml = @"
-<?xml version="1.0" encoding="UTF-16"?>
-<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <RegistrationInfo>
-    <Description>Восстанавливает патч подсказок орфографии eXpress после обновлений приложения.</Description>
-    <URI>\$taskName</URI>
-  </RegistrationInfo>
-  <Triggers>
-    <LogonTrigger>
-      <Enabled>true</Enabled>
-      <UserId>$user</UserId>
-      <Delay>PT20S</Delay>
-    </LogonTrigger>
-    <TimeTrigger>
-      <StartBoundary>$startBoundary</StartBoundary>
-      <Enabled>true</Enabled>
-      <Repetition>
-        <Interval>PT${GuardIntervalMinutes}M</Interval>
-        <StopAtDurationEnd>false</StopAtDurationEnd>
-      </Repetition>
-    </TimeTrigger>
-  </Triggers>
-  <Principals>
-    <Principal id="Author">
-      <UserId>$user</UserId>
-      <LogonType>InteractiveToken</LogonType>
-      <RunLevel>LeastPrivilege</RunLevel>
-    </Principal>
-  </Principals>
-  <Settings>
-    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-    <AllowHardTerminate>true</AllowHardTerminate>
-    <StartWhenAvailable>true</StartWhenAvailable>
-    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
-    <IdleSettings>
-      <StopOnIdleEnd>false</StopOnIdleEnd>
-      <RestartOnIdle>false</RestartOnIdle>
-    </IdleSettings>
-    <AllowStartOnDemand>true</AllowStartOnDemand>
-    <Enabled>true</Enabled>
-    <Hidden>false</Hidden>
-    <RunOnlyIfIdle>false</RunOnlyIfIdle>
-    <WakeToRun>false</WakeToRun>
-    <ExecutionTimeLimit>PT5M</ExecutionTimeLimit>
-    <Priority>7</Priority>
-  </Settings>
-  <Actions Context="Author">
-    <Exec>
-      <Command>$command</Command>
-      <Arguments>$arguments</Arguments>
-    </Exec>
-  </Actions>
-</Task>
-"@
-
-Register-ScheduledTask -TaskName $taskName -Xml $xml -Force | Out-Null
-Write-Step 'Задача зарегистрирована'
+& (Join-Path $root 'register-guard.ps1') -GuardIntervalMinutes $GuardIntervalMinutes
 
 Write-Host ''
 Write-Host 'Готово. Перезапустите eXpress, чтобы патч заработал.' -ForegroundColor Green
